@@ -5,13 +5,24 @@ var Synth = (function () {
 		context = new AudioContext(),
 		masterGain = context.createGain(),
 		chOneOutputGain = context.createGain(),
+		chTwoOutputGain = context.createGain(),
 		chSum = context.createGain(),
 		Envelope,
 		VCO,
 		VCA,
 		chOneSettings = {
 			wave: 'sine',
-			detune: 0
+			detune: 0,
+			attack: 0,
+			release: 1,
+			pan: 1
+		},
+		chTwoSettings = {
+			wave: 'sine',
+			detune: 10,
+			attack: 0.3,
+			release: 1,
+			pan: 0
 		},
 		notes = [];
 
@@ -29,29 +40,15 @@ var Synth = (function () {
 
 			Synth.Define.Concepts();
 
-			chOneOutputGain.connect( chSum );
+			Synth.Channel.Setup( chOneOutputGain, chOneSettings );
+			Synth.Channel.Setup( chTwoOutputGain, chTwoSettings );
+			
 			chSum.connect( masterGain );
 
 			masterGain.gain.value = 0.5;
 			masterGain.connect( context.destination );
 
 			keyboard.keyDown = Synth.KeyDown;
-
-
-
-			var chOneVCO = new VCO,
-				chOneVCA = new VCA,
-				chOneEnvelope = new Envelope;
-
-			chOneVCO.setType( chOneSettings.wave );
-			chOneVCO.setDetune( chOneSettings.detune );
-
-			chOneEnvelope.setAttack( 0.5 );
-			chOneEnvelope.setRelease( 1 );
-
-			chOneVCO.connect( chOneVCA );
-			chOneEnvelope.connect( chOneVCA.amplitude );
-			chOneVCA.connect( chOneOutputGain );
 
 		},
 
@@ -67,7 +64,6 @@ var Synth = (function () {
 
 			VCO: function () {
 
-				// VCO class
 				VCO = (function( context ) {
 					
 					function VCO() {
@@ -90,7 +86,7 @@ var Synth = (function () {
 					};
 
 					VCO.prototype.setType = function( type ) {
-						this.oscillator.type.value = type;
+						this.oscillator.type = type;
 					};
 
 					VCO.prototype.setDetune = function( detune ) {
@@ -173,6 +169,35 @@ var Synth = (function () {
 
 					return VCA;
 				})(context);
+
+			}
+
+		},
+
+		Channel: {
+
+			Setup: function ( gainContext, settings ) {
+
+				var vco = new VCO,
+					vca = new VCA,
+					envelope = new Envelope,
+					panner = context.createPanner();
+
+				vco.setType( settings.wave );
+				vco.setDetune( settings.detune );
+
+				envelope.setAttack( settings.attack );
+				envelope.setRelease( settings.release );
+
+				vco.connect( vca );
+				envelope.connect( vca.amplitude );
+				vca.connect( gainContext );
+
+				panner.panningModel = 'equalpower';
+				panner.setPosition( settings.pan, 0, 1 - Math.abs( settings.pan ) );
+
+				gainContext.connect( panner );
+				panner.connect( chSum );
 
 			}
 
