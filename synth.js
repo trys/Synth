@@ -15,14 +15,14 @@ var Synth = (function () {
 			detune: 0,
 			attack: 0,
 			release: 1,
-			pan: 1
+			pan: 0
 		},
 		chTwoSettings = {
 			wave: 'sine',
 			detune: 10,
 			attack: 0.3,
 			release: 1,
-			pan: 0
+			pan: 1
 		},
 		notes = [];
 
