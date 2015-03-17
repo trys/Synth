@@ -1,16 +1,24 @@
-var synth = (function () {
+var Synth = (function () {
 	"use strict";
 
 	var keyboard = document.getElementById( 'keyboard' ),
 		context = new AudioContext(),
 		masterGain = context.createGain(),
-		waveform = 'sine',
+		osOneOutputGain = context.createGain(),
+		osSum = context.createGain(),
+		VCO,
+		osOneSettings = {
+			wave: 'sine',
+			pitch: 1,
+			detune: 0
+		},
 		notes = [];
 
 	return {
 
 		Initialise: function () {
 
+			// Keyboard setup and basic gain routing
 			keyboard = new QwertyHancock({
 				width: 600,
 				height: 150,
@@ -18,47 +26,105 @@ var synth = (function () {
 				startNote: 'A3'
 			});
 
-			masterGain.gain.value = 0.3;
+			Synth.Define.Concepts();
+
+			osOneOutputGain.connect( osSum );
+			osSum.connect( masterGain );
+
+			masterGain.gain.value = 0.5;
 			masterGain.connect( context.destination );
 
-			keyboard.keyDown = synth.keyDown;
-			keyboard.keyUp = synth.keyUp;
+			keyboard.keyDown = Synth.KeyDown;
+			keyboard.keyUp = Synth.KeyUp;
 
 		},
 
-		keyDown: function (note, frequency) {
-			
-			var oscillatorOne = context.createOscillator();
-			
-			oscillatorOne.type = waveform;
-			oscillatorOne.frequency.value = frequency;
-			oscillatorOne.connect( masterGain );
-			oscillatorOne.start( 0 );
+		Define: {
 
-			if ( notes[ note ] !== undefined ) {
-				notes[ note ].stop( 0 );
-				notes[ note ].disconnect();
+			Concepts: function () {
+
+				Synth.Define.VCO();
+
+			},
+
+			VCO: function () {
+
+				// VCO class
+				VCO = (function( context ) {
+					
+					function VCO() {
+						
+						this.oscillator = context.createOscillator();
+						this.oscillator.start( 0 );
+
+						this.input = this.oscillator;
+						this.output = this.oscillator;
+
+					};
+
+					VCO.prototype.setFrequency = function( frequency ) {
+						this.oscillator.frequency.setValueAtTime( frequency, context.currentTime );
+					};
+
+					VCO.prototype.setType = function( type ) {
+						this.oscillator.type.value = type;
+					};
+
+					VCO.prototype.setDetune = function( detune ) {
+						this.oscillator.detune.setValueAtTime( detune, context.currentTime );
+					};
+
+					VCO.prototype.connect = function( node ) {
+						
+						if ( node.hasOwnProperty( 'input' ) ) {
+							this.output.connect( node.input );
+						} else {
+							this.output.connect( node );
+						};
+
+					}
+
+					return VCO;
+				})(context);
+
 			}
 
-			notes[ note ] = oscillatorOne;
+		},
+
+		KeyDown: function (note, frequency) {
+			
+			var osOne = new VCO;
+			
+			osOne.setType( osOneSettings.wave );
+			osOne.setFrequency( frequency * osOneSettings.pitch );
+			osOne.setDetune( osOneSettings.detune );
+
+			osOne.connect( osOneOutputGain );
+
+			if ( notes[ note ] !== undefined ) {
+				notes[ note ].oscillator.stop( 0 );
+				notes[ note ].oscillator.disconnect();
+			}
+
+			notes[ note ] = osOne;
 
 		},
 		
-		keyUp: function ( note, frequency ) {
+		KeyUp: function ( note, frequency ) {
 
 			if ( notes[ note ] !== undefined ) {
-				notes[ note ].stop( 0 );
-				notes[ note ].disconnect();
+				notes[ note ].oscillator.stop( 0 );
+				notes[ note ].oscillator.disconnect();
 			}
 
 		}
-		
 
+		
 	};
 }());
 
 window.AudioContext = window.AudioContext || window.webkitAudioContext;
-synth.Initialise();
+Synth.Initialise();
 
 
 
