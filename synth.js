@@ -15,14 +15,16 @@ var Synth = (function () {
 			wave: 'sine',
 			detune: 0,
 			attack: 0,
-			release: 1,
+			release: 0.3,
+			sustain: 0,
 			pan: 0
 		},
 		chTwoSettings = {
 			wave: 'sine',
 			detune: 10,
 			attack: 0.3,
-			release: 1,
+			release: 0.3,
+			sustain: 0,
 			pan: 1
 		};
 
@@ -118,12 +120,22 @@ var Synth = (function () {
 						this.releaseTime = release;
 					};
 
+					Envelope.prototype.setSustain = function ( sustain ) {
+						this.sustain = sustain;
+					};
+
 					Envelope.prototype.trigger = function() {
 						var now = context.currentTime;
 						this.param.cancelScheduledValues(now);
 						this.param.setValueAtTime(0, now);
 						this.param.linearRampToValueAtTime(1, now + this.attackTime);
-						this.param.linearRampToValueAtTime(0, now + this.attackTime + this.releaseTime);
+						this.currentTime = now;
+
+						if ( this.sustain === 1 ) {
+
+						} else {
+							this.param.linearRampToValueAtTime( 0, now + this.attackTime + this.releaseTime );
+						}
 					};
 
 					Envelope.prototype.connect = function(param) {
@@ -138,6 +150,7 @@ var Synth = (function () {
 			VCA: function () {
 
 				VCA = ( function( context ) {
+
 					function VCA() {
 						this.gain = context.createGain();
 						this.gain.gain.value = 0;
@@ -206,17 +219,18 @@ var Synth = (function () {
 
 				envelope.setAttack( settings.attack );
 				envelope.setRelease( settings.release );
+				envelope.setSustain( settings.sustain );
 
 				vco.connect( vca );
-				envelope.connect( vca.amplitude );
 				vca.connect( pannerGain );
+			
+				pannerGain.connect( panner );
 
 				panner.panningModel = 'equalpower';
 				panner.setPosition( settings.pan, 0, 1 - Math.abs( settings.pan ) );
-
-				pannerGain.connect( panner );
 				panner.connect( chSum );
 
+				envelope.connect( vca.amplitude );
 				envelope.trigger();
 
 				return {
@@ -230,15 +244,28 @@ var Synth = (function () {
 
 			StopOscillators: function ( frequency ) {
 
+				var thisOscillator,
+					stopTime;
+
 				for ( var i = Oscillators[ frequency ].length - 1; i >= 0; i-- ) {
-					Oscillators[ frequency ][ i ].vco.oscillator.stop();
+
+					thisOscillator = Oscillators[ frequency ][ i ];
+					stopTime = context.currentTime + thisOscillator.envelope.attackTime + thisOscillator.envelope.releaseTime;
+
+					if ( thisOscillator.envelope.sustain === 1 ) {
+						thisOscillator.envelope.param.setValueAtTime( 1, context.currentTime );
+						thisOscillator.envelope.param.linearRampToValueAtTime( 0, stopTime );
+					}
+
+					thisOscillator.vco.oscillator.stop( stopTime );
+
 				};
 
 			}
 
 		},
 
-		KeyDown: function (note, frequency) {
+		KeyDown: function ( note, frequency ) {
 
 			if ( Oscillators[ frequency ] === undefined ) {
 				Synth.Channel.PlayNote( frequency );
@@ -247,7 +274,6 @@ var Synth = (function () {
 		},
 
 		KeyUp: function ( note, frequency ) {
-
 
 			if ( Oscillators[ frequency ] !== undefined ) {
 				Synth.Channel.StopNote( frequency );
