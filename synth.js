@@ -16,7 +16,7 @@ var Synth = (function () {
 			detune: 0,
 			attack: 0,
 			release: 0.3,
-			sustain: 0,
+			sustain: 1,
 			pan: 0
 		},
 		chTwoSettings = {
@@ -24,7 +24,7 @@ var Synth = (function () {
 			detune: 10,
 			attack: 0.3,
 			release: 0.3,
-			sustain: 0,
+			sustain: 1,
 			pan: 1
 		};
 
