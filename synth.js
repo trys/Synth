@@ -7,6 +7,8 @@ var Synth = (function () {
 		chOneOutputGain = context.createGain(),
 		chTwoOutputGain = context.createGain(),
 		chSum = context.createGain(),
+		Oscillators = {},
+		Voices = [],
 		Envelope,
 		VCO,
 		VCA,
@@ -40,8 +42,8 @@ var Synth = (function () {
 
 			Synth.Define.Concepts();
 
-			Synth.Channel.Setup( chOneOutputGain, chOneSettings );
-			Synth.Channel.Setup( chTwoOutputGain, chTwoSettings );
+			//Synth.Channel.Setup( chOneOutputGain, chOneSettings );
+			//Synth.Channel.Setup( chTwoOutputGain, chTwoSettings );
 			
 			chSum.connect( masterGain );
 
@@ -49,7 +51,8 @@ var Synth = (function () {
 			masterGain.connect( context.destination );
 
 			keyboard.keyDown = Synth.KeyDown;
-
+			keyboard.keyUp = Synth.KeyUp;
+			
 		},
 
 		Define: {
@@ -115,6 +118,7 @@ var Synth = (function () {
 					function Envelope() {
 						this.attackTime = 0.1;
 						this.releaseTime = 0.1;
+						this.sustainTime = 1;
 
 						var that = this;
 						document.body.addEventListener( 'gate', function () {
@@ -131,12 +135,16 @@ var Synth = (function () {
 						this.releaseTime = release;
 					};
 
+					Envelope.prototype.setSustain = function ( sustain ) {
+						this.sustainTime = sustain;
+					};
+
 					Envelope.prototype.trigger = function() {
 						var now = context.currentTime;
 						this.param.cancelScheduledValues(now);
 						this.param.setValueAtTime(0, now);
 						this.param.linearRampToValueAtTime(1, now + this.attackTime);
-						this.param.linearRampToValueAtTime(0, now + this.attackTime + this.releaseTime);
+						this.param.linearRampToValueAtTime(0, now + this.attackTime + this.sustainTime + this.releaseTime);
 					};
 
 					Envelope.prototype.connect = function(param) {
@@ -178,35 +186,102 @@ var Synth = (function () {
 
 			Setup: function ( gainContext, settings ) {
 
+				
+
+			},
+
+			PlayNote: function ( frequency ) {
+
+				Oscillators[frequency] = Synth.Channel.CreateOscillators( frequency );
+
+			},
+
+			StopNote: function ( frequency ) {
+
+				Synth.Channel.StopOscillators( frequency );
+				delete Oscillators[ frequency ];
+
+			},
+
+			CreateOscillators: function ( frequency ) {
+
+				var CreatedOscillators = [];
+
+				if ( chOneSettings !== undefined ) {
+					CreatedOscillators.push( Synth.Channel.CreateOscillator( chOneSettings, frequency ) );
+				}
+
+				if ( chTwoSettings !== undefined ) {
+					CreatedOscillators.push( Synth.Channel.CreateOscillator( chTwoSettings, frequency ) );
+				}
+
+				return CreatedOscillators;
+
+			},
+
+			CreateOscillator: function ( settings, frequency ) {
+
 				var vco = new VCO,
 					vca = new VCA,
 					envelope = new Envelope,
+					pannerGain = context.createGain(),
 					panner = context.createPanner();
 
 				vco.setType( settings.wave );
 				vco.setDetune( settings.detune );
+				vco.setFrequency( frequency );
 
 				envelope.setAttack( settings.attack );
 				envelope.setRelease( settings.release );
 
 				vco.connect( vca );
 				envelope.connect( vca.amplitude );
-				vca.connect( gainContext );
+				vca.connect( pannerGain );
 
 				panner.panningModel = 'equalpower';
 				panner.setPosition( settings.pan, 0, 1 - Math.abs( settings.pan ) );
 
-				gainContext.connect( panner );
+				pannerGain.connect( panner );
 				panner.connect( chSum );
+
+				envelope.trigger();
+
+				return {
+					vco: vco,
+					vca: vca,
+					envelope: envelope,
+					panner: panner
+				}
+
+			},
+
+			StopOscillators: function ( frequency ) {
+
+				for ( var i = Oscillators[ frequency ].length - 1; i >= 0; i-- ) {
+					Oscillators[ frequency ][ i ].vco.oscillator.stop();
+				};
 
 			}
 
 		},
 
 		KeyDown: function (note, frequency) {
-			
-			Synth.Trigger( 'frequency', frequency );
-			Synth.Trigger( 'gate' );
+
+			if ( Oscillators[ frequency ] === undefined ) {
+				Synth.Channel.PlayNote( frequency );
+			}
+
+			//Synth.Trigger( 'frequency', frequency );
+			//Synth.Trigger( 'gate' );
+
+		},
+
+		KeyUp: function ( note, frequency ) {
+
+
+			if ( Oscillators[ frequency ] !== undefined ) {
+				Synth.Channel.StopNote( frequency );
+			}
 
 		},
 
