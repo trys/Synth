@@ -8,7 +8,6 @@ var Synth = (function () {
 		chTwoOutputGain = context.createGain(),
 		chSum = context.createGain(),
 		Oscillators = {},
-		Voices = [],
 		Envelope,
 		VCO,
 		VCA,
@@ -25,8 +24,7 @@ var Synth = (function () {
 			attack: 0.3,
 			release: 1,
 			pan: 1
-		},
-		notes = [];
+		};
 
 	return {
 
@@ -41,9 +39,6 @@ var Synth = (function () {
 			});
 
 			Synth.Define.Concepts();
-
-			//Synth.Channel.Setup( chOneOutputGain, chOneSettings );
-			//Synth.Channel.Setup( chTwoOutputGain, chTwoSettings );
 			
 			chSum.connect( masterGain );
 
@@ -76,11 +71,6 @@ var Synth = (function () {
 
 						this.input = this.oscillator;
 						this.output = this.oscillator;
-
-						var that = this;
-						document.body.addEventListener( 'frequency', function ( data ) {
-							that.setFrequency( data.detail );
-						});
 
 					};
 
@@ -118,13 +108,6 @@ var Synth = (function () {
 					function Envelope() {
 						this.attackTime = 0.1;
 						this.releaseTime = 0.1;
-						this.sustainTime = 1;
-
-						var that = this;
-						document.body.addEventListener( 'gate', function () {
-							that.trigger();
-						});
-
 					};
 
 					Envelope.prototype.setAttack = function ( attack ) {
@@ -135,16 +118,12 @@ var Synth = (function () {
 						this.releaseTime = release;
 					};
 
-					Envelope.prototype.setSustain = function ( sustain ) {
-						this.sustainTime = sustain;
-					};
-
 					Envelope.prototype.trigger = function() {
 						var now = context.currentTime;
 						this.param.cancelScheduledValues(now);
 						this.param.setValueAtTime(0, now);
 						this.param.linearRampToValueAtTime(1, now + this.attackTime);
-						this.param.linearRampToValueAtTime(0, now + this.attackTime + this.sustainTime + this.releaseTime);
+						this.param.linearRampToValueAtTime(0, now + this.attackTime + this.releaseTime);
 					};
 
 					Envelope.prototype.connect = function(param) {
@@ -184,15 +163,9 @@ var Synth = (function () {
 
 		Channel: {
 
-			Setup: function ( gainContext, settings ) {
-
-				
-
-			},
-
 			PlayNote: function ( frequency ) {
 
-				Oscillators[frequency] = Synth.Channel.CreateOscillators( frequency );
+				Oscillators[ frequency ] = Synth.Channel.CreateOscillators( frequency );
 
 			},
 
@@ -270,9 +243,6 @@ var Synth = (function () {
 			if ( Oscillators[ frequency ] === undefined ) {
 				Synth.Channel.PlayNote( frequency );
 			}
-
-			//Synth.Trigger( 'frequency', frequency );
-			//Synth.Trigger( 'gate' );
 
 		},
 
