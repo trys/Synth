@@ -13,7 +13,7 @@ var Synth = (function () {
 		VCA,
 		Filter,
 		chOneSettings = {
-			wave: 'sine',
+			wave: 'sawtooth',
 			detune: 0,
 			attack: 0,
 			release: 0.1,
@@ -21,13 +21,17 @@ var Synth = (function () {
 			pan: 0,
 			id: 0,
 			filter: {
-				frequency: 1500,
+				frequency: 15000,
+				origin: 100,
+				attack: 1,
+				release: 1,
+				sustain: 1,
 				type: 'lowpass',
 				q: 10
 			}
 		},
 		chTwoSettings = {
-			wave: 'sine',
+			wave: 'sawtooth',
 			detune: 10,
 			attack: 0.1,
 			release: 0.1,
@@ -35,7 +39,11 @@ var Synth = (function () {
 			pan: 1,
 			id: 1,
 			filter: {
-				frequency: 1500,
+				frequency: 15000,
+				origin: 100,
+				attack: 1,
+				release: 1,
+				sustain: 1,
 				type: 'lowpass',
 				q: 10
 			}
@@ -138,16 +146,20 @@ var Synth = (function () {
 						this.sustain = sustain;
 					};
 
-					Envelope.prototype.trigger = function() {
+					Envelope.prototype.trigger = function( start, end ) {
+
 						var now = context.currentTime;
-						this.param.cancelScheduledValues(now);
-						this.param.setValueAtTime(0, now);
-						this.param.linearRampToValueAtTime(1, now + this.attackTime);
-						this.currentTime = now;
+						this.param.cancelScheduledValues( now );
+						this.param.setValueAtTime( start, now );
+						this.param.linearRampToValueAtTime( end, now + this.attackTime );
+
+						this.start = start;
+						this.end = end;
 
 						if ( this.sustain !== 1 ) {
-							this.param.linearRampToValueAtTime( 0, now + this.attackTime + this.releaseTime );
+							this.param.linearRampToValueAtTime( start, now + this.attackTime + this.releaseTime );
 						}
+
 					};
 
 					Envelope.prototype.connect = function(param) {
@@ -194,6 +206,8 @@ var Synth = (function () {
 						
 						this.input = this.filter;
 						this.output = this.filter;
+
+						this.frequency = this.filter.frequency;
 
 						Filter.prototype.setFrequency = function ( frequency ) {
 							this.filter.frequency.value = frequency;
@@ -269,7 +283,8 @@ var Synth = (function () {
 					envelope = new Envelope,
 					pannerGain = context.createGain(),
 					panner = context.createPanner(),
-					filter = new Filter;
+					filter = new Filter,
+					filterEnvelope = new Envelope;
 
 				vco.setType( settings.wave );
 				vco.setDetune( settings.detune );
@@ -287,14 +302,22 @@ var Synth = (function () {
 				filter.setType( settings.filter.type );
 				filter.setQ( settings.filter.q );
 
+				filterEnvelope.setAttack( settings.filter.attack );
+				filterEnvelope.setRelease( settings.filter.release );
+				filterEnvelope.setSustain( settings.filter.sustain );
+
+				filterEnvelope.connect( filter.frequency );
+				filterEnvelope.trigger( settings.filter.origin, settings.filter.frequency );
+
 				envelope.connect( vca.amplitude );
-				envelope.trigger();
+				envelope.trigger( 0, 1 );
 
 				return {
 					vco: vco,
 					vca: vca,
 					envelope: envelope,
-					panner: pannerGain
+					panner: pannerGain,
+					filterEnvelope: filterEnvelope
 				}
 
 			},
@@ -310,8 +333,13 @@ var Synth = (function () {
 					stopTime = context.currentTime + thisOscillator.envelope.attackTime + thisOscillator.envelope.releaseTime;
 
 					if ( thisOscillator.envelope.sustain === 1 ) {
-						thisOscillator.envelope.param.setValueAtTime( 1, context.currentTime );
-						thisOscillator.envelope.param.linearRampToValueAtTime( 0, stopTime );
+						thisOscillator.envelope.param.setValueAtTime( thisOscillator.envelope.end, context.currentTime );
+						thisOscillator.envelope.param.linearRampToValueAtTime( thisOscillator.envelope.start, stopTime );
+					}
+
+					if ( thisOscillator.filterEnvelope.sustain === 1 ) {
+						thisOscillator.envelope.param.setValueAtTime( thisOscillator.envelope.end, context.currentTime );
+						thisOscillator.envelope.param.linearRampToValueAtTime( thisOscillator.envelope.start, stopTime );
 					}
 
 					thisOscillator.vco.oscillator.stop( stopTime );
