@@ -4,7 +4,113 @@
 		<meta charset="UTF-8" />
 	</head>
 	<body>
-		<div id="keyboard"></div>
+		<form id="controls" data-channel="0">
+			<fieldset class="channel">
+				<legend>Channel</legend>
+				<ul>
+					<li>
+						<h4>Select</h4>
+						<ul>
+							<li>
+								<label for="channel_select_one">One</label>
+								<input type="radio" id="channel_select_one" name="channel_select" value="channel.0" checked>
+							</li>
+							<li>
+								<label for="channel_select_two">Two</label>
+								<input type="radio" id="channel_select_two" name="channel_select" value="channel.1">
+							</li>
+						</ul>
+					</li>
+					<li>
+						<h4>Engage</h4>
+						<ul>
+							<li>
+								<label for="channel_engage_one">One</label>
+								<input type="checkbox" id="channel_engage_one" name="channel_engage" value="channel.0">
+							</li>
+							<li>
+								<label for="channel_engage_two">Two</label>
+								<input type="checkbox" id="channel_engage_two" name="channel_engage" value="channel.1">
+							</li>
+						</ul>
+					</li>
+				</ul>
+			</fieldset>
+			<fieldset class="oscillator">
+				<legend>Oscillator</legend>
+				<ul>
+					<li>
+						<h4>Wave</h4>
+						<select name="oscillator.wave" id="oscillator_wave">
+							<option value="sine">Sine</option>
+							<option value="sawtooth">Sawtooth</option>
+							<option value="triangle">Triangle</option>
+							<option value="square">Square</option>
+						</select>
+					</li>
+					<li>
+						<h4>Detune</h4>
+						<input type="number" name="oscillator.detune" id="oscillator_detune" value="0" step="0.1">
+					</li>
+					<li>
+						<h4>Attack</h4>
+						<input type="number" name="oscillator.attack" id="oscillator_attack" value="0" step="0.1">
+					</li>
+					<li>
+						<h4>Sustain</h4>
+						<input type="number" name="oscillator.sustain" id="oscillator_sustain" value="0" step="0.1">
+					</li>
+					<li>
+						<h4>Release</h4>
+						<input type="number" name="oscillator.release" id="oscillator_release" value="0" step="0.1">
+					</li>
+				</ul>
+			</fieldset>
+			<fieldset class="filter">
+				<legend>Filter</legend>
+				<ul>
+					<li>
+						<h4>Type</h4>
+						<select name="filter.type" id="filter_type">
+							<option value="lowpass">Low Pass</option>
+							<option value="highpass">High Pass</option>
+							<option value="bandpass">Band Pass</option>
+							<option value="lowshelf">Lowshelf</option>
+							<option value="highshelf">Highshelf</option>
+							<option value="notch">Notch</option>
+						</select>
+					</li>
+					<li>
+						<h4>Origin</h4>
+						<input type="number" name="filter.origin" id="filter_origin" value="50" step="10">
+					</li>
+					<li>
+						<h4>Cutoff</h4>
+						<input type="number" name="filter.frequency" id="filter_frequency" value="50" step="10">
+					</li>
+					<li>
+						<h4>Q</h4>
+						<input type="number" name="filter.q" id="filter_q" value="0" step="1">
+					</li>
+					<li>
+						<h4>Attack</h4>
+						<input type="number" name="filter.attack" id="filter_attack" value="0" step="0.1">
+					</li>
+					<li>
+						<h4>Sustain</h4>
+						<input type="number" name="filter.sustain" id="filter_sustain" value="0" step="0.1">
+					</li>
+					<li>
+						<h4>Release</h4>
+						<input type="number" name="filter.release" id="filter_release" value="0" step="0.1">
+					</li>
+				</ul>
+			</fieldset>
+			<fieldset>
+				<legend>Controller</legend>
+				<div id="keyboard"></div>
+			</fieldset>
+		</form>
 		<script src="qwerty.js"></script>
 		<script src="synth.js"></script>
 	</body>
