@@ -2,6 +2,40 @@
 <html>
 	<head>
 		<meta charset="UTF-8" />
+		<style>
+
+			html,
+			body {
+				padding: 0;
+				margin: 0;
+			}
+
+			* {
+				-webkit-box-sizing: border-box;
+				        box-sizing: border-box;
+			}
+
+			#controls {
+				padding: 1rem;
+			}
+
+			.channel,
+			.oscillator,
+			.filter {
+				margin: 0 0 20px 2%;
+				width: 32%;
+				float: left;
+			}
+
+			.channel {
+				margin-left: 0;
+			}
+
+			.keyboard {
+				clear: both;
+			}
+
+		</style>
 	</head>
 	<body>
 		<form id="controls" data-channel="0">
@@ -106,7 +140,7 @@
 					</li>
 				</ul>
 			</fieldset>
-			<fieldset>
+			<fieldset class="keyboard">
 				<legend>Controller</legend>
 				<div id="keyboard"></div>
 			</fieldset>
